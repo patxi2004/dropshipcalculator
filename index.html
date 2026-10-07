@@ -1,0 +1,551 @@
+<title>Calculadora Arbitraje</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  /* Layout: two-panel — inputs stacked left, results sticky right; single column on mobile */
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --fg: #1a1a1a;
+    --fg-muted: #6b6560;
+    --border: #e2ddd7;
+    --accent: #3d5a80;
+    --accent-light: #eef2f7;
+    --profit: #2d7a4f;
+    --profit-bg: #e8f5ee;
+    --loss: #c0392b;
+    --loss-bg: #fdecea;
+    --input-bg: #faf9f7;
+    --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Space Mono', 'Consolas', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414;
+      --surface: #1e1e1e;
+      --fg: #e8e4df;
+      --fg-muted: #9a9590;
+      --border: #2e2c2a;
+      --accent: #7ba3cf;
+      --accent-light: #1c2a3a;
+      --profit: #5db87a;
+      --profit-bg: #1a2e22;
+      --loss: #e47367;
+      --loss-bg: #2e1a18;
+      --input-bg: #252525;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414;
+    --surface: #1e1e1e;
+    --fg: #e8e4df;
+    --fg-muted: #9a9590;
+    --border: #2e2c2a;
+    --accent: #7ba3cf;
+    --accent-light: #1c2a3a;
+    --profit: #5db87a;
+    --profit-bg: #1a2e22;
+    --loss: #e47367;
+    --loss-bg: #2e1a18;
+    --input-bg: #252525;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    padding-inline: 16px;
+    padding-block: 0;
+    line-height: 1.5;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 2rem 0 1rem;
+  }
+  .page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .page-header p {
+    color: var(--fg-muted);
+    font-size: 0.875rem;
+    margin: 0.25rem 0 0;
+  }
+
+  .layout {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: start;
+    padding-bottom: 3rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+
+  .field-group {
+    display: grid;
+    gap: 0.875rem;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .field label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--fg-muted);
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-wrap .currency-tag {
+    position: absolute;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    pointer-events: none;
+  }
+  .input-wrap .suffix-tag {
+    position: absolute;
+    right: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    pointer-events: none;
+  }
+  input[type="number"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--fg);
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input.has-prefix { padding-left: 2.75rem; }
+  input.has-suffix { padding-right: 2.25rem; }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.75rem 0;
+  }
+
+  /* Results panel */
+  .results-panel {
+    position: sticky;
+    top: env(safe-area-inset-top, 16px);
+  }
+  .results-panel .card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+  }
+  .result-row .label {
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+  .result-row .value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.9rem;
+  }
+
+  .result-main {
+    background: var(--profit-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .result-main.negative { background: var(--loss-bg); }
+  .result-main .big-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--fg-muted);
+    margin: 0 0 0.25rem;
+  }
+  .result-main .big-value {
+    font-family: var(--font-mono);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--profit);
+    line-height: 1.1;
+    transition: color 0.2s;
+  }
+  .result-main.negative .big-value { color: var(--loss); }
+  .result-main .sub-value {
+    font-size: 0.8rem;
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    margin-top: 0.15rem;
+  }
+
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .breakdown-header {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--fg-muted);
+    margin: 0;
+  }
+
+  .bar-chart {
+    margin-top: 0.5rem;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+  .bar-label {
+    flex: 0 0 90px;
+    color: var(--fg-muted);
+    text-align: right;
+    font-size: 0.7rem;
+  }
+  .bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--input-bg);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    min-width: 2px;
+  }
+  .bar-fill.cost { background: var(--accent); }
+  .bar-fill.profit-bar { background: var(--profit); }
+  .bar-fill.loss-bar { background: var(--loss); }
+  .bar-val {
+    flex: 0 0 55px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-muted);
+  }
+
+  .tip {
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    background: var(--accent-light);
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 720px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+    .results-panel {
+      position: static;
+    }
+    .input-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <h1>Calculadora de Arbitraje eBay → MercadoLibre</h1>
+  <p>Calcula tu margen real de ganancia comprando en eBay y vendiendo en México</p>
+</div>
+
+<div class="layout">
+  <div class="inputs-col">
+
+    <div class="card" style="margin-bottom:1.25rem">
+      <p class="section-label">Compra en eBay</p>
+      <div class="field-group">
+        <div class="input-row">
+          <div class="field">
+            <label for="ebayPrice">Precio del producto</label>
+            <div class="input-wrap">
+              <span class="currency-tag">USD</span>
+              <input type="number" id="ebayPrice" class="has-prefix" value="45" min="0" step="0.01">
+            </div>
+          </div>
+          <div class="field">
+            <label for="ebayShipping">Envío eBay</label>
+            <div class="input-wrap">
+              <span class="currency-tag">USD</span>
+              <input type="number" id="ebayShipping" class="has-prefix" value="12" min="0" step="0.01">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="otherCosts">Otros costos (courier, handling)</label>
+          <div class="input-wrap">
+            <span class="currency-tag">USD</span>
+            <input type="number" id="otherCosts" class="has-prefix" value="5" min="0" step="0.01">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem">
+      <p class="section-label">Tipo de cambio e importación</p>
+      <div class="field-group">
+        <div class="input-row">
+          <div class="field">
+            <label for="exchangeRate">Tipo de cambio USD → MXN</label>
+            <div class="input-wrap">
+              <input type="number" id="exchangeRate" value="17.50" min="0" step="0.01">
+            </div>
+          </div>
+          <div class="field">
+            <label for="importDuty">Arancel de importación</label>
+            <div class="input-wrap">
+              <input type="number" id="importDuty" value="0" min="0" max="100" step="0.5" class="has-suffix">
+              <span class="suffix-tag">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-top:0.25rem">
+          <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer">
+            <input type="checkbox" id="applyIVA" checked>
+            Aplicar IVA de importación (16%)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">Venta en MercadoLibre México</p>
+      <div class="field-group">
+        <div class="field">
+          <label for="mlPrice">Precio de venta</label>
+          <div class="input-wrap">
+            <span class="currency-tag">MXN</span>
+            <input type="number" id="mlPrice" class="has-prefix" value="1899" min="0" step="1">
+          </div>
+        </div>
+        <div class="input-row">
+          <div class="field">
+            <label for="mlCommission">Comisión MercadoLibre</label>
+            <div class="input-wrap">
+              <input type="number" id="mlCommission" value="17.5" min="0" max="100" step="0.5" class="has-suffix">
+              <span class="suffix-tag">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="mlShipping">Envío MercadoLibre</label>
+            <div class="input-wrap">
+              <span class="currency-tag">MXN</span>
+              <input type="number" id="mlShipping" class="has-prefix" value="0" min="0" step="1">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="results-panel">
+    <div class="card">
+      <p class="section-label">Resultado</p>
+
+      <div class="result-main" id="profitBox">
+        <p class="big-label">Ganancia neta</p>
+        <p class="big-value" id="profitValue">$0.00</p>
+        <p class="sub-value" id="profitUSD"></p>
+      </div>
+
+      <div class="breakdown">
+        <p class="breakdown-header">Desglose</p>
+        <div class="result-row">
+          <span class="label">Costo total eBay</span>
+          <span class="value" id="totalEbayCost">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">+ Importación</span>
+          <span class="value" id="importCost">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">= Costo total (MXN)</span>
+          <span class="value" id="totalCostMXN">$0</span>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <span class="label">Precio de venta</span>
+          <span class="value" id="salePrice">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">− Comisión ML</span>
+          <span class="value" id="commissionAmount">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">− Envío ML</span>
+          <span class="value" id="shippingML">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">= Ingreso neto</span>
+          <span class="value" id="netRevenue">$0</span>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <span class="label">Margen</span>
+          <span class="value" id="marginPct">0%</span>
+        </div>
+        <div class="result-row">
+          <span class="label">ROI</span>
+          <span class="value" id="roiPct">0%</span>
+        </div>
+      </div>
+
+      <div class="bar-chart" id="barChart">
+        <p class="breakdown-header">Distribución del precio</p>
+      </div>
+
+      <div class="tip" id="tipBox">
+        Ajusta los valores para ver tu margen en tiempo real.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const inputs = ['ebayPrice','ebayShipping','otherCosts','exchangeRate','importDuty','applyIVA','mlPrice','mlCommission','mlShipping'];
+  const fmt = n => n.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  function calc() {
+    const ebayPrice = +$('ebayPrice').value || 0;
+    const ebayShip = +$('ebayShipping').value || 0;
+    const other = +$('otherCosts').value || 0;
+    const rate = +$('exchangeRate').value || 1;
+    const duty = (+$('importDuty').value || 0) / 100;
+    const iva = $('applyIVA').checked ? 0.16 : 0;
+    const mlPrice = +$('mlPrice').value || 0;
+    const mlComm = (+$('mlCommission').value || 0) / 100;
+    const mlShip = +$('mlShipping').value || 0;
+
+    const totalUSD = ebayPrice + ebayShip + other;
+    const totalEbayMXN = totalUSD * rate;
+    const dutyMXN = totalEbayMXN * duty;
+    const ivaMXN = (totalEbayMXN + dutyMXN) * iva;
+    const importTotal = dutyMXN + ivaMXN;
+    const totalCost = totalEbayMXN + importTotal;
+
+    const commissionMXN = mlPrice * mlComm;
+    const ivaComm = commissionMXN * 0.16;
+    const totalCommission = commissionMXN + ivaComm;
+    const netRev = mlPrice - totalCommission - mlShip;
+
+    const profit = netRev - totalCost;
+    const margin = mlPrice > 0 ? (profit / mlPrice) * 100 : 0;
+    const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+
+    $('totalEbayCost').textContent = '$' + fmt(totalEbayMXN);
+    $('importCost').textContent = '$' + fmt(importTotal);
+    $('totalCostMXN').textContent = '$' + fmt(totalCost);
+    $('salePrice').textContent = '$' + fmt(mlPrice);
+    $('commissionAmount').textContent = '$' + fmt(totalCommission);
+    $('shippingML').textContent = '$' + fmt(mlShip);
+    $('netRevenue').textContent = '$' + fmt(netRev);
+
+    const profitBox = $('profitBox');
+    const isNeg = profit < 0;
+    profitBox.classList.toggle('negative', isNeg);
+    $('profitValue').textContent = (isNeg ? '−' : '') + '$' + fmt(Math.abs(profit));
+    $('profitUSD').textContent = '≈ USD ' + fmt(Math.abs(profit / rate));
+
+    $('marginPct').textContent = margin.toFixed(1) + '%';
+    $('marginPct').style.color = isNeg ? 'var(--loss)' : 'var(--profit)';
+    $('roiPct').textContent = roi.toFixed(1) + '%';
+    $('roiPct').style.color = isNeg ? 'var(--loss)' : 'var(--profit)';
+
+    // bar chart
+    if (mlPrice > 0) {
+      const costPct = Math.min((totalCost / mlPrice) * 100, 100);
+      const commPct = Math.min((totalCommission / mlPrice) * 100, 100);
+      const shipPct = Math.min((mlShip / mlPrice) * 100, 100);
+      const profPct = Math.max(Math.min((profit / mlPrice) * 100, 100), 0);
+      const lossPct = profit < 0 ? Math.min((Math.abs(profit) / mlPrice) * 100, 100) : 0;
+      $('barChart').innerHTML = `
+        <p class="breakdown-header">Distribución del precio</p>
+        <div class="bar-row"><span class="bar-label">Costo prod.</span><div class="bar-track"><div class="bar-fill cost" style="width:${costPct}%"></div></div><span class="bar-val">${costPct.toFixed(0)}%</span></div>
+        <div class="bar-row"><span class="bar-label">Comisión ML</span><div class="bar-track"><div class="bar-fill cost" style="width:${commPct}%;opacity:0.6"></div></div><span class="bar-val">${commPct.toFixed(0)}%</span></div>
+        ${mlShip > 0 ? `<div class="bar-row"><span class="bar-label">Envío ML</span><div class="bar-track"><div class="bar-fill cost" style="width:${shipPct}%;opacity:0.4"></div></div><span class="bar-val">${shipPct.toFixed(0)}%</span></div>` : ''}
+        <div class="bar-row"><span class="bar-label">${isNeg ? 'Pérdida' : 'Ganancia'}</span><div class="bar-track"><div class="bar-fill ${isNeg ? 'loss-bar' : 'profit-bar'}" style="width:${isNeg ? lossPct : profPct}%"></div></div><span class="bar-val">${isNeg ? '-' : ''}${(isNeg ? lossPct : profPct).toFixed(0)}%</span></div>
+      `;
+    }
+
+    // tip
+    const tip = $('tipBox');
+    if (margin >= 25) tip.textContent = 'Excelente margen. Este producto tiene buena rentabilidad.';
+    else if (margin >= 15) tip.textContent = 'Margen aceptable. Verifica que el volumen de ventas lo justifique.';
+    else if (margin >= 5) tip.textContent = 'Margen bajo. Considera negociar mejor precio o subir el de venta.';
+    else if (margin >= 0) tip.textContent = 'Margen muy ajustado. Cualquier imprevisto genera pérdida.';
+    else tip.textContent = 'Operación a pérdida. Revisa costos o ajusta el precio de venta.';
+  }
+
+  inputs.forEach(id => {
+    const el = $(id);
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+
+  calc();
+</script>
