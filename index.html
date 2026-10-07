@@ -276,6 +276,7 @@
     min-width: 2px;
   }
   .bar-fill.cost { background: var(--accent); }
+  .bar-fill.tax { background: #e07b5f; }
   .bar-fill.profit-bar { background: var(--profit); }
   .bar-fill.loss-bar { background: var(--loss); }
   .bar-val {
@@ -386,7 +387,7 @@
           <div class="field">
             <label for="mlCommission">Comisión MercadoLibre</label>
             <div class="input-wrap">
-              <input type="number" id="mlCommission" value="17.5" min="0" max="100" step="0.5" class="has-suffix">
+              <input type="number" id="mlCommission" value="14.49" min="0" max="100" step="0.01" class="has-suffix">
               <span class="suffix-tag">%</span>
             </div>
           </div>
@@ -434,6 +435,14 @@
         <div class="result-row">
           <span class="label">− Comisión ML</span>
           <span class="value" id="commissionAmount">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">− ISR (20%)</span>
+          <span class="value" id="r-isr">$0</span>
+        </div>
+        <div class="result-row">
+          <span class="label">− IVA venta (16%)</span>
+          <span class="value" id="r-iva-venta">$0</span>
         </div>
         <div class="result-row">
           <span class="label">− Envío ML</span>
@@ -491,7 +500,13 @@
     const commissionMXN = mlPrice * mlComm;
     const ivaComm = commissionMXN * 0.16;
     const totalCommission = commissionMXN + ivaComm;
-    const netRev = mlPrice - totalCommission - mlShip;
+
+    const isrRate = 0.20;
+    const ivaVentaRate = 0.16;
+    const isrMX = mlPrice * isrRate;
+    const ivaVenta = mlPrice * ivaVentaRate;
+
+    const netRev = mlPrice - totalCommission - isrMX - ivaVenta - mlShip;
 
     const profit = netRev - totalCost;
     const margin = mlPrice > 0 ? (profit / mlPrice) * 100 : 0;
@@ -502,6 +517,8 @@
     $('totalCostMXN').textContent = '$' + fmt(totalCost);
     $('salePrice').textContent = '$' + fmt(mlPrice);
     $('commissionAmount').textContent = '$' + fmt(totalCommission);
+    $('r-isr').textContent = '$' + fmt(isrMX);
+    $('r-iva-venta').textContent = '$' + fmt(ivaVenta);
     $('shippingML').textContent = '$' + fmt(mlShip);
     $('netRevenue').textContent = '$' + fmt(netRev);
 
@@ -520,6 +537,7 @@
     if (mlPrice > 0) {
       const costPct = Math.min((totalCost / mlPrice) * 100, 100);
       const commPct = Math.min((totalCommission / mlPrice) * 100, 100);
+      const taxPct = Math.min(((isrMX + ivaVenta) / mlPrice) * 100, 100);
       const shipPct = Math.min((mlShip / mlPrice) * 100, 100);
       const profPct = Math.max(Math.min((profit / mlPrice) * 100, 100), 0);
       const lossPct = profit < 0 ? Math.min((Math.abs(profit) / mlPrice) * 100, 100) : 0;
@@ -527,6 +545,7 @@
         <p class="breakdown-header">Distribución del precio</p>
         <div class="bar-row"><span class="bar-label">Costo prod.</span><div class="bar-track"><div class="bar-fill cost" style="width:${costPct}%"></div></div><span class="bar-val">${costPct.toFixed(0)}%</span></div>
         <div class="bar-row"><span class="bar-label">Comisión ML</span><div class="bar-track"><div class="bar-fill cost" style="width:${commPct}%;opacity:0.6"></div></div><span class="bar-val">${commPct.toFixed(0)}%</span></div>
+        <div class="bar-row"><span class="bar-label">ISR + IVA</span><div class="bar-track"><div class="bar-fill tax" style="width:${taxPct}%"></div></div><span class="bar-val">${taxPct.toFixed(0)}%</span></div>
         ${mlShip > 0 ? `<div class="bar-row"><span class="bar-label">Envío ML</span><div class="bar-track"><div class="bar-fill cost" style="width:${shipPct}%;opacity:0.4"></div></div><span class="bar-val">${shipPct.toFixed(0)}%</span></div>` : ''}
         <div class="bar-row"><span class="bar-label">${isNeg ? 'Pérdida' : 'Ganancia'}</span><div class="bar-track"><div class="bar-fill ${isNeg ? 'loss-bar' : 'profit-bar'}" style="width:${isNeg ? lossPct : profPct}%"></div></div><span class="bar-val">${isNeg ? '-' : ''}${(isNeg ? lossPct : profPct).toFixed(0)}%</span></div>
       `;
