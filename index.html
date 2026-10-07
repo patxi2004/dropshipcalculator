@@ -437,11 +437,11 @@
           <span class="value" id="commissionAmount">$0</span>
         </div>
         <div class="result-row">
-          <span class="label">− ISR (20%)</span>
+          <span class="label">− ISR (20% s/base)</span>
           <span class="value" id="r-isr">$0</span>
         </div>
         <div class="result-row">
-          <span class="label">− IVA venta (16%)</span>
+          <span class="label">− IVA (16% s/base)</span>
           <span class="value" id="r-iva-venta">$0</span>
         </div>
         <div class="result-row">
@@ -501,10 +501,9 @@
     const ivaComm = commissionMXN * 0.16;
     const totalCommission = commissionMXN + ivaComm;
 
-    const isrRate = 0.20;
-    const ivaVentaRate = 0.16;
-    const isrMX = mlPrice * isrRate;
-    const ivaVenta = mlPrice * ivaVentaRate;
+    const baseFiscal = mlPrice / 1.16;
+    const isrMX = baseFiscal * 0.20;
+    const ivaVenta = baseFiscal * 0.16;
 
     const netRev = mlPrice - totalCommission - isrMX - ivaVenta - mlShip;
 
