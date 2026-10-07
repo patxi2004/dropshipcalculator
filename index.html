@@ -325,14 +325,14 @@
             <label for="ebayPrice">Precio del producto</label>
             <div class="input-wrap">
               <span class="currency-tag">USD</span>
-              <input type="number" id="ebayPrice" class="has-prefix" value="45" min="0" step="0.01">
+              <input type="number" id="ebayPrice" class="has-prefix" value="0" min="0" step="0.01" placeholder="0.00">
             </div>
           </div>
           <div class="field">
             <label for="ebayShipping">Envío eBay</label>
             <div class="input-wrap">
               <span class="currency-tag">USD</span>
-              <input type="number" id="ebayShipping" class="has-prefix" value="12" min="0" step="0.01">
+              <input type="number" id="ebayShipping" class="has-prefix" value="0" min="0" step="0.01" placeholder="0.00">
             </div>
           </div>
         </div>
@@ -340,7 +340,7 @@
           <label for="otherCosts">Otros costos (courier, handling)</label>
           <div class="input-wrap">
             <span class="currency-tag">USD</span>
-            <input type="number" id="otherCosts" class="has-prefix" value="5" min="0" step="0.01">
+            <input type="number" id="otherCosts" class="has-prefix" value="0" min="0" step="0.01" placeholder="0.00">
           </div>
         </div>
       </div>
@@ -353,7 +353,7 @@
           <div class="field">
             <label for="exchangeRate">Tipo de cambio USD → MXN</label>
             <div class="input-wrap">
-              <input type="number" id="exchangeRate" value="17.50" min="0" step="0.01">
+              <input type="number" id="exchangeRate" value="18" min="0" step="0.01">
             </div>
           </div>
           <div class="field">
@@ -380,8 +380,9 @@
           <label for="mlPrice">Precio de venta</label>
           <div class="input-wrap">
             <span class="currency-tag">MXN</span>
-            <input type="number" id="mlPrice" class="has-prefix" value="1899" min="0" step="1">
+            <input type="number" id="mlPrice" class="has-prefix" value="0" min="0" step="1" placeholder="0">
           </div>
+          <span id="min-price-hint" style="font-size:0.75rem;color:var(--accent);margin-top:0.15rem;"></span>
         </div>
         <div class="input-row">
           <div class="field">
@@ -395,7 +396,7 @@
             <label for="mlShipping">Envío MercadoLibre</label>
             <div class="input-wrap">
               <span class="currency-tag">MXN</span>
-              <input type="number" id="mlShipping" class="has-prefix" value="0" min="0" step="1">
+              <input type="number" id="mlShipping" class="has-prefix" value="150" min="0" step="1">
             </div>
           </div>
         </div>
@@ -497,15 +498,13 @@
     const importTotal = dutyMXN + ivaMXN;
     const totalCost = totalEbayMXN + importTotal;
 
-    const commissionMXN = mlPrice * mlComm;
-    const ivaComm = commissionMXN * 0.16;
-    const totalCommission = commissionMXN + ivaComm;
+    const commission = mlPrice * mlComm;
 
     const baseFiscal = mlPrice / 1.16;
     const isrMX = baseFiscal * 0.20;
     const ivaVenta = baseFiscal * 0.16;
 
-    const netRev = mlPrice - totalCommission - isrMX - ivaVenta - mlShip;
+    const netRev = mlPrice - commission - isrMX - ivaVenta - mlShip;
 
     const profit = netRev - totalCost;
     const margin = mlPrice > 0 ? (profit / mlPrice) * 100 : 0;
@@ -515,7 +514,7 @@
     $('importCost').textContent = '$' + fmt(importTotal);
     $('totalCostMXN').textContent = '$' + fmt(totalCost);
     $('salePrice').textContent = '$' + fmt(mlPrice);
-    $('commissionAmount').textContent = '$' + fmt(totalCommission);
+    $('commissionAmount').textContent = '$' + fmt(commission);
     $('r-isr').textContent = '$' + fmt(isrMX);
     $('r-iva-venta').textContent = '$' + fmt(ivaVenta);
     $('shippingML').textContent = '$' + fmt(mlShip);
@@ -535,7 +534,7 @@
     // bar chart
     if (mlPrice > 0) {
       const costPct = Math.min((totalCost / mlPrice) * 100, 100);
-      const commPct = Math.min((totalCommission / mlPrice) * 100, 100);
+      const commPct = Math.min((commission / mlPrice) * 100, 100);
       const taxPct = Math.min(((isrMX + ivaVenta) / mlPrice) * 100, 100);
       const shipPct = Math.min((mlShip / mlPrice) * 100, 100);
       const profPct = Math.max(Math.min((profit / mlPrice) * 100, 100), 0);
@@ -548,6 +547,15 @@
         ${mlShip > 0 ? `<div class="bar-row"><span class="bar-label">Envío ML</span><div class="bar-track"><div class="bar-fill cost" style="width:${shipPct}%;opacity:0.4"></div></div><span class="bar-val">${shipPct.toFixed(0)}%</span></div>` : ''}
         <div class="bar-row"><span class="bar-label">${isNeg ? 'Pérdida' : 'Ganancia'}</span><div class="bar-track"><div class="bar-fill ${isNeg ? 'loss-bar' : 'profit-bar'}" style="width:${isNeg ? lossPct : profPct}%"></div></div><span class="bar-val">${isNeg ? '-' : ''}${(isNeg ? lossPct : profPct).toFixed(0)}%</span></div>
       `;
+    }
+
+    // min price hint
+    const factorDescuento = 1 - mlComm - (0.20 / 1.16) - (0.16 / 1.16);
+    if (factorDescuento > 0 && (totalCost + mlShip) > 0) {
+      const minPrice = Math.ceil((totalCost + mlShip) / factorDescuento);
+      $('min-price-hint').textContent = 'Mínimo sugerido: $' + minPrice.toLocaleString('es-MX') + ' MXN (costos + 15% margen: $' + Math.ceil(minPrice * 1.15).toLocaleString('es-MX') + ')';
+    } else {
+      $('min-price-hint').textContent = '';
     }
 
     // tip
